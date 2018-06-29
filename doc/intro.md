@@ -1,0 +1,2 @@
+# Introduction to clj-rally
+
