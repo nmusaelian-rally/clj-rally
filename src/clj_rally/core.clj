@@ -45,9 +45,9 @@
   (def base-url  (get-in rally [:base-url]))
   (def workspace (get-in rally [:workspace]))
   (def project   (get-in rally [:project]))
+  (def log-level (get-in rally [:log-level]))
 
   (def empty-payload "")
-  (def log-level "info")
 
   (def sub-endpoint "subscription?fetch=subscriptionID,workspaces")
   (def result   (make-request :get headers base-url sub-endpoint empty-payload log-level))
