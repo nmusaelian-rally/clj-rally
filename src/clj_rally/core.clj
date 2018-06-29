@@ -58,12 +58,8 @@
   (def context-oids (context workspaces-url headers base-url))
   (def create-endpoint (format "/story/create?workspace=/workspace/%s&project=/project/%s" (get context-oids :workspace) (get context-oids :project)))
 
-  ;(def story-name (format "clojure story %s" (get-time)))
   (def payload (format "{\"HierarchicalRequirement\":
     {\"Name\":\"clojure story %s\"}}" (str (t/time-now))))
-
-  ;(def payload "{\"HierarchicalRequirement\":
-    ;{\"Name\":\"Nick's Clojure story\"}}")
 
   (println(make-request :post (assoc headers :subscription sub) base-url create-endpoint payload log-level))
   )
