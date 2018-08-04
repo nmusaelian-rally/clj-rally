@@ -1,9 +1,10 @@
 (ns clj-rally.core
-  (:require [clj-http.client :as client])
-  (:require [clojure.data.json :as json])
-  (:require [clojure.edn])
-  (:require [clojure.string :as str])
-  (:require [clj-time.core :as t]))
+    (:gen-class)
+    (:require [clj-http.client :as client]
+              [clojure.data.json :as json]
+              [clojure.edn]
+              [clojure.string :as str]
+              [clj-time.core :as t]))
 
 (defn make-request
   [method headers base-url endpoint payload log-level]
@@ -21,26 +22,35 @@
        :debug-body (debug?)
        :body payload})))
 
+(def config (clojure.edn/read-string (slurp "resources/config.edn")))
+
+(defn read-config [config]
+  (:rally config))
 
 (defn context
   [workspaces-url headers base-url]
-  (def endpoint (second (str/split workspaces-url #"v2.0")))
-  (def workspace-endpoint (str endpoint "?query=(Name = \"NM LA\")&fetch=ObjectID,Projects"))
-  (def wrk-result (make-request :get headers base-url workspace-endpoint "" "info"))
+  (def payload "")
+  (def log-level "info")
+  (def workspaces-resource (second (str/split workspaces-url #"v2.0"))) ; /Subscription/123/Workspaces
+  (def rally (read-config config))
+  (def workspace-name (get-in rally [:workspace]))
+  (def project-name   (get-in rally [:project]))
+  (def workspace-query (format "?query=(Name = \"%s\")&fetch=ObjectID,Projects" workspace-name))
+  (def workspace-endpoint (str workspaces-resource workspace-query))
+  (def wrk-result (make-request :get headers base-url workspace-endpoint payload log-level))
   (def workspace-oid (get-in (json/read-str wrk-result) ["QueryResult" "Results" 0 "ObjectID"]))
   (def projects-url  (get-in (json/read-str wrk-result) ["QueryResult" "Results" 0 "Projects" "_ref"]))
-  (def endpoint2 (second (str/split projects-url #"v2.0")))
-  (def project-endpoint (str endpoint2 "?query=(Name = BugzProject)&fetch=ObjectID"))
+  (def projects-resource (second (str/split projects-url #"v2.0"))) ; /Workspace/456/Projects
+  (def project-query (format "?query=(Name = \"%s\")&fetch=ObjectID" project-name))
+  (def project-endpoint (str projects-resource project-query))
   (print project-endpoint)
-  (def proj-result (make-request :get headers base-url project-endpoint "" "info"))
+  (def proj-result (make-request :get headers base-url project-endpoint payload log-level))
   (def project-oid (get-in (json/read-str wrk-result) ["QueryResult" "Results" 0 "ObjectID"]))
   {:workspace workspace-oid :project project-oid}
   )
 
 (defn -main [& args]
-  (def config (clojure.edn/read-string (slurp "resources/config.edn")))
-
-  (def rally (:rally config))
+  (def rally (read-config config))
   (def headers   (get-in rally [:auth]))
   (def base-url  (get-in rally [:base-url]))
   (def workspace (get-in rally [:workspace]))
