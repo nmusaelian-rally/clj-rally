@@ -6,29 +6,29 @@
             [clojure.string :as str]
             [clj-time.core :as t]))
 
+(def config (clojure.edn/read-string (slurp "resources/config.edn")))
+
+(def rally (get-in config [:rally]))
+
 (defn make-request
-  [method headers base-url endpoint payload log-level]
+  [method headers endpoint payload]
   (defn debug? []
-    (if (= log-level "debug") true false))
+    (if (= (get-in rally [:log-level]) "debug") true false))
 
   (:body
     (client/request
       {
        :headers headers
        :method method
-       :url (str base-url endpoint)
+       :url (str (get-in rally [:base-url]) endpoint)
        :content-type "application/json"
        :debug (debug?)
        :debug-body (debug?)
        :body payload})))
 
-(def config (clojure.edn/read-string (slurp "resources/config.edn")))
-
-(def rally (get-in config [:rally]))
-
 (defn subscription-info []
   (let [ sub-endpoint "subscription?fetch=subscriptionID,workspaces" empty-payload ""
-        result (make-request :get (get-in rally [:auth]) (get-in rally [:base-url]) sub-endpoint empty-payload (get-in rally [:log-level]))
+        result (make-request :get (get-in rally [:auth]) sub-endpoint empty-payload)
         sub-info {:sub-id         (get-in (json/read-str result) ["Subscription" "SubscriptionID"])
                   :sub-uuid       (get-in (json/read-str result) ["Subscription" "_refObjectUUID"])
                   :workspaces-url (second (str/split (get-in (json/read-str result) ["Subscription" "Workspaces" "_ref"]) #"v2.0" ))}]
@@ -39,19 +39,19 @@
   (def log-level "info")
   (def headers   (get-in rally [:auth]))
   (def base-url  (get-in rally [:base-url]))
-  (def workspaces-resource (second (str/split (get-in subscription-info [:workspaces-url]) #"v2.0"))) ; /Subscription/123/Workspaces
+  (def workspaces-resource (get-in (subscription-info) [:workspaces-url])) ; /Subscription/123/Workspaces
   (def workspace-name (get-in rally [:workspace]))
   (def project-name   (get-in rally [:project]))
   (def workspace-query (format "?query=(Name = \"%s\")&fetch=ObjectID,Projects" workspace-name))
   (def workspace-endpoint (str workspaces-resource workspace-query))
-  (def wrk-result (make-request :get headers base-url workspace-endpoint payload log-level))
+  (def wrk-result (make-request :get headers workspace-endpoint payload))
   (def workspace-oid (get-in (json/read-str wrk-result) ["QueryResult" "Results" 0 "ObjectID"]))
   (def projects-url  (get-in (json/read-str wrk-result) ["QueryResult" "Results" 0 "Projects" "_ref"]))
   (def projects-resource (second (str/split projects-url #"v2.0"))) ; /Workspace/456/Projects
   (def project-query (format "?query=(Name = \"%s\")&fetch=ObjectID" project-name))
   (def project-endpoint (str projects-resource project-query))
-  (def proj-result (make-request :get headers base-url project-endpoint payload log-level))
-  (def project-oid (get-in (json/read-str wrk-result) ["QueryResult" "Results" 0 "ObjectID"]))
+  (def proj-result (make-request :get headers project-endpoint payload))
+  (def project-oid (get-in (json/read-str proj-result) ["QueryResult" "Results" 0 "ObjectID"]))
   {:workspace workspace-oid :project project-oid}
   )
 

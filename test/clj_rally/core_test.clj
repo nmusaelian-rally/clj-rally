@@ -11,9 +11,15 @@
     (is (= (get-in result [:sub-uuid]) "13eb4d62-3c4f-442e-b825-9f6786726d99")))
   )
 
+(deftest context-test
+  (let [result (context)]
+    (is (= (get-in result [:workspace]) 1572380957))
+    (is (= (get-in result [:project]) 1572381037)))
+  )
 
 (defn -main [& args]
   (subscription-info-test)
+  (context-test)
   )
 
 
