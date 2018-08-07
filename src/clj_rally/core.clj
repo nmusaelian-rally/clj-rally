@@ -35,24 +35,20 @@
     sub-info))
 
 (defn context []
-  (def payload "")
-  (def log-level "info")
-  (def headers   (get-in rally [:auth]))
-  (def base-url  (get-in rally [:base-url]))
-  (def workspaces-resource (get-in (subscription-info) [:workspaces-url])) ; /Subscription/123/Workspaces
-  (def workspace-name (get-in rally [:workspace]))
-  (def project-name   (get-in rally [:project]))
-  (def workspace-query (format "?query=(Name = \"%s\")&fetch=ObjectID,Projects" workspace-name))
-  (def workspace-endpoint (str workspaces-resource workspace-query))
-  (def wrk-result (make-request :get headers workspace-endpoint payload))
-  (def workspace-oid (get-in (json/read-str wrk-result) ["QueryResult" "Results" 0 "ObjectID"]))
-  (def projects-url  (get-in (json/read-str wrk-result) ["QueryResult" "Results" 0 "Projects" "_ref"]))
-  (def projects-resource (second (str/split projects-url #"v2.0"))) ; /Workspace/456/Projects
-  (def project-query (format "?query=(Name = \"%s\")&fetch=ObjectID" project-name))
-  (def project-endpoint (str projects-resource project-query))
-  (def proj-result (make-request :get headers project-endpoint payload))
-  (def project-oid (get-in (json/read-str proj-result) ["QueryResult" "Results" 0 "ObjectID"]))
-  {:workspace workspace-oid :project project-oid}
+  (let [payload ""
+        headers (get-in rally [:auth])
+        workspaces-resource (get-in (subscription-info) [:workspaces-url])
+        workspace-query (format "?query=(Name = \"%s\")&fetch=ObjectID,Projects" (get-in rally [:workspace]))
+        workspace-endpoint (str workspaces-resource workspace-query)
+        wrk-result (make-request :get headers workspace-endpoint payload)
+        workspace-oid (get-in (json/read-str wrk-result) ["QueryResult" "Results" 0 "ObjectID"])
+        projects-url  (get-in (json/read-str wrk-result) ["QueryResult" "Results" 0 "Projects" "_ref"])
+        projects-resource (second (str/split projects-url #"v2.0"))
+        project-query (format "?query=(Name = \"%s\")&fetch=ObjectID" (get-in rally [:project]))
+        project-endpoint (str projects-resource project-query)
+        proj-result (make-request :get headers project-endpoint payload)
+        project-oid (get-in (json/read-str proj-result) ["QueryResult" "Results" 0 "ObjectID"])]
+    {:workspace workspace-oid :project project-oid})
   )
 
 
