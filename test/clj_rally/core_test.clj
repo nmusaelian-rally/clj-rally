@@ -20,8 +20,8 @@
   (let [artifact-type "HierarchicalRequirement"
         payload (format "{\"%s\": {\"Name\":\"clojure story %s\"}}" artifact-type (str (t/time-now)))
         context-oids (context)
-        create-endpoint (format "/story/create?workspace=/workspace/%s&project=/project/%s" (get context-oids :workspace) (get context-oids :project))
-        ]
+        story-resource "/hierarchicalrequirement/create?workspace=/workspace/%s&project=/project/%s"
+        create-endpoint (format story-resource (get context-oids :workspace) (get context-oids :project))]
     (make-request :post (get-in rally [:auth]) create-endpoint payload)))
 
 
@@ -29,5 +29,6 @@
   (subscription-info-test)
   (context-test)
   (create-story-test))
+
 
 
