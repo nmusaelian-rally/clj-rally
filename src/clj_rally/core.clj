@@ -69,21 +69,5 @@
 ;  )
 ;
 ;(defn -main [& args]
-;  ;(def rally (read-config config))
-;  (def headers   (get-in rally [:auth]))
-;  (def base-url  (get-in rally [:base-url]))
-;  (def workspace (get-in rally [:workspace]))
-;  (def project   (get-in rally [:project]))
-;  (def log-level (get-in rally [:log-level]))
-;  (def empty-payload "")
-;  (def workspaces-url (get-in (json/read-str result) ["Subscription" "Workspaces" "_ref"]))
-;  (def sub (str sub-id " " sub-uuid))
-;  (def context-oids (context))
-;  (def create-endpoint (format "/story/create?workspace=/workspace/%s&project=/project/%s" (get context-oids :workspace) (get context-oids :project)))
-;
-;  (def payload (format "{\"HierarchicalRequirement\":
-;    {\"Name\":\"clojure story %s\"}}" (str (t/time-now))))
-;
-;  ;(println(make-request :post (assoc headers :subscription sub) base-url create-endpoint payload log-level))
-;  (println(make-request :post (subscription-info) base-url create-endpoint payload log-level))
+;      (println "ok")
 ;  )
