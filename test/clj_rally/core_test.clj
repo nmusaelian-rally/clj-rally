@@ -6,6 +6,7 @@
 
 
 (deftest subscription-info-test
+  ;(intern 'clj-rally.core 'rally (connection (clojure.edn/read-string (slurp "resources/config.edn"))))
   (let [result (subscription-info)]
     (is (= (get-in result [:workspaces-url]) "/Subscription/1154643/Workspaces"))
     (is (= (get-in result [:sub-id]) 209))
@@ -24,11 +25,35 @@
         create-endpoint (format story-resource (get context-oids :workspace) (get context-oids :project))]
     (make-request :post (get-in rally [:auth]) create-endpoint payload)))
 
+(deftest bad-creds-test
+  (let [result (subscription-info)]
+    (is (= (get-in result [:workspaces-url]) "/Subscription/1154643/Workspaces"))
+    (is (= (get-in result [:sub-id]) 209))
+    (is (= (get-in result [:sub-uuid]) "13eb4d62-3c4f-442e-b825-9f6786726d99"))))
+
+(deftest page-not-found-test
+  (let [result (subscription-info)]
+    (is (= (get-in result [:workspaces-url]) "/Subscription/1154643/Workspaces"))
+    (is (= (get-in result [:sub-id]) 209))
+    (is (= (get-in result [:sub-uuid]) "13eb4d62-3c4f-442e-b825-9f6786726d99"))))
+
 
 (defn -main [& args]
+  (let [config (clojure.edn/read-string (slurp "resources/config.edn"))]
+    (intern 'clj-rally.core 'rally (connection config)))
+
   (subscription-info-test)
   (context-test)
-  (create-story-test))
+  (create-story-test)
+
+  ;(let [config (clojure.edn/read-string (slurp "resources/bad-creds.edn"))]
+  ;  (intern 'clj-rally.core 'rally (connection config)))
+  ;(bad-creds-test)
+
+  (let [config (clojure.edn/read-string (slurp "resources/bad-url.edn"))]
+    (intern 'clj-rally.core 'rally (connection config)))
+  (page-not-found-test)
+  )
 
 
 

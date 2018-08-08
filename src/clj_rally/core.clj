@@ -7,10 +7,13 @@
             [clj-time.core :as t]
             [slingshot.slingshot :as slingshot :only [throw+ try+]]))
 
-(def config (clojure.edn/read-string (slurp "resources/config.edn")))
+;(def config (clojure.edn/read-string (slurp "resources/config.edn")))
 
-(def rally (get-in config [:rally]))
+(declare rally)
 
+(defn connection
+  [config]
+  (get-in config [:rally]))
 
 (defn make-request
   [method headers endpoint payload]
@@ -29,7 +32,9 @@
          :debug-body (debug?)
          :body payload}))
     (catch [:status 401] {:keys [body]}
-      (println (str "Oh noes! 401! Body:\n" body)))
+      (println (str "Oh noes! Bad creds 401! Body:\n" body)))
+    (catch [:status 404] {:keys [body]}
+      (println (str "Oh noes! Page not found 404! Body:\n" body)))
     (catch Exception e (println (str "Oh noes! Exception:\n ") (.toString e)))
     ))
 
