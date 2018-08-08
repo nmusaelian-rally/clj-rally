@@ -5,9 +5,8 @@
             [clojure.edn]
             [clojure.string :as str]
             [clj-time.core :as t]
+            [clojure.tools.logging :as log]
             [slingshot.slingshot :as slingshot :only [throw+ try+]]))
-
-;(def config (clojure.edn/read-string (slurp "resources/config.edn")))
 
 (declare rally)
 
@@ -17,6 +16,7 @@
 
 (defn make-request
   [method headers endpoint payload]
+  (log/info (format "making request: %s" endpoint))
   (slingshot/try+
     (defn debug? []
       (if (= (get-in rally [:log-level]) "debug") true false))
@@ -32,10 +32,10 @@
          :debug-body (debug?)
          :body payload}))
     (catch [:status 401] {:keys [body]}
-      (println (str "Oh noes! Bad creds 401! Body:\n" body)))
+      (log/error (str "Oh noes! Bad creds 401! Body:\n" body)))
     (catch [:status 404] {:keys [body]}
-      (println (str "Oh noes! Page not found 404! Body:\n" body)))
-    (catch Exception e (println (str "Oh noes! Exception:\n ") (.toString e)))
+      (log/error (str "Oh noes! Page not found 404! Body:\n" body)))
+    (catch Exception e (log/error (str "Oh noes! Exception:\n ") (.toString e)))
     ))
 
 (defn subscription-info []
