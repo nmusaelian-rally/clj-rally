@@ -15,7 +15,7 @@
   (get-in config [:rally]))
 
 (defn make-request
-  [method headers endpoint &[payload query-params]]
+  [method headers endpoint & {:keys [payload query-params]}]
   (log/info (format "making request: %s" endpoint))
   (slingshot/try+
     (defn debug? []
@@ -66,7 +66,8 @@
         workspace-fetch (format "?fetch=ObjectID,Projects")
         ;workspace-endpoint (str workspaces-resource workspace-query)
         workspace-endpoint (str workspaces-resource workspace-fetch)
-        wrk-result (make-request :get headers workspace-endpoint payload workspace-query-params )
+        ;wrk-result (make-request :get headers workspace-endpoint payload workspace-query-params )
+        wrk-result (make-request :get headers workspace-endpoint :query-params workspace-query-params )
         workspace-oid (get-in (json/read-str wrk-result) ["QueryResult" "Results" 0 "ObjectID"])
         projects-url  (get-in (json/read-str wrk-result) ["QueryResult" "Results" 0 "Projects" "_ref"])
         projects-resource (second (str/split projects-url #"v2.0"))
@@ -74,11 +75,11 @@
         project-fetch (format "?fetch=ObjectID")
         ;project-query (format "?query=(Name = \"%s\")&fetch=ObjectID" (get-in rally [:project]))
         project-endpoint (str projects-resource project-fetch)
-        proj-result (make-request :get headers project-endpoint payload project-query-params)
+        ;proj-result (make-request :get headers project-endpoint payload project-query-params)
+        proj-result (make-request :get headers project-endpoint :query-params project-query-params)
         project-oid (get-in (json/read-str proj-result) ["QueryResult" "Results" 0 "ObjectID"])]
     {:workspace workspace-oid :project project-oid})
   )
-
 
 (def default-options
   (memoize

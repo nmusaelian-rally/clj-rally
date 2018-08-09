@@ -24,7 +24,7 @@
         context-oids (context)
         story-resource "/hierarchicalrequirement/create?workspace=/workspace/%s&project=/project/%s"
         create-endpoint (format story-resource (get context-oids :workspace) (get context-oids :project))]
-    (make-request :post (get-in rally [:auth]) create-endpoint payload)))
+    (make-request :post (get-in rally [:auth]) create-endpoint :payload payload)))
 
 (deftest bad-creds-test
   (is (thrown? Exception (subscription-info))))
@@ -42,13 +42,13 @@
   (context-test)
   (create-story-test)
 
-  ;(let [config (clojure.edn/read-string (slurp "resources/bad-creds.edn"))]
-  ;  (intern 'clj-rally.core 'rally (connection config)))
-  ;(bad-creds-test)
-  ;
-  ;(let [config (clojure.edn/read-string (slurp "resources/bad-url.edn"))]
-  ;  (intern 'clj-rally.core 'rally (connection config)))
-  ;(page-not-found-test)
+  (let [config (clojure.edn/read-string (slurp "resources/bad-creds.edn"))]
+    (intern 'clj-rally.core 'rally (connection config)))
+  (bad-creds-test)
+
+  (let [config (clojure.edn/read-string (slurp "resources/bad-url.edn"))]
+    (intern 'clj-rally.core 'rally (connection config)))
+  (page-not-found-test)
  )
 
 
