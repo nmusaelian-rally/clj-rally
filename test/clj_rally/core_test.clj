@@ -20,6 +20,7 @@
 (deftest create-story-test
   (let [artifact-type "HierarchicalRequirement"
         payload (format "{\"%s\": {\"Name\":\"clojure story %s\"}}" artifact-type (str (t/time-now)))
+        ;payload {:HierarchicalRequirement {:Name (format "clojure story %s" (str (t/time-now)))}}
         context-oids (context)
         story-resource "/hierarchicalrequirement/create?workspace=/workspace/%s&project=/project/%s"
         create-endpoint (format story-resource (get context-oids :workspace) (get context-oids :project))]
@@ -41,14 +42,14 @@
   (context-test)
   (create-story-test)
 
-  (let [config (clojure.edn/read-string (slurp "resources/bad-creds.edn"))]
-    (intern 'clj-rally.core 'rally (connection config)))
-  (bad-creds-test)
-
-  (let [config (clojure.edn/read-string (slurp "resources/bad-url.edn"))]
-    (intern 'clj-rally.core 'rally (connection config)))
-  (page-not-found-test)
-  )
+  ;(let [config (clojure.edn/read-string (slurp "resources/bad-creds.edn"))]
+  ;  (intern 'clj-rally.core 'rally (connection config)))
+  ;(bad-creds-test)
+  ;
+  ;(let [config (clojure.edn/read-string (slurp "resources/bad-url.edn"))]
+  ;  (intern 'clj-rally.core 'rally (connection config)))
+  ;(page-not-found-test)
+ )
 
 
 
