@@ -1,6 +1,7 @@
 (ns clj-rally.core-test
   (:require [clojure.test :refer :all]
             [clojure.string :as str]
+            [clojure.data.json :as json]
             [clj-rally.core :refer :all]
             [clojure.tools.logging :as log]
             [clj-time.core :as t]))
@@ -19,12 +20,15 @@
 
 (deftest create-story-test
   (let [artifact-type "HierarchicalRequirement"
-        payload (format "{\"%s\": {\"Name\":\"one more clojure toolkit story %s\"}}" artifact-type (str (t/time-now)))
+        payload (format "{\"%s\": {\"Name\":\"another clojure toolkit story %s\"}}" artifact-type (str (t/time-now)))
         ;payload {:HierarchicalRequirement {:Name (format "clojure story %s" (str (t/time-now)))}}
         context-oids (context)
-        story-resource "/hierarchicalrequirement/create?workspace=/workspace/%s&project=/project/%s"
-        create-endpoint (format story-resource (get context-oids :workspace) (get context-oids :project))]
-    (make-request :post (get-in rally [:auth]) create-endpoint :payload payload)))
+        story-resource "/%s/create?workspace=/workspace/%s&project=/project/%s"
+        create-endpoint (format story-resource artifact-type (get context-oids :workspace) (get context-oids :project))]
+    (let [result (make-request :post (get-in rally [:auth]) create-endpoint :payload payload)
+          story-name (get-in (json/read-str result) ["CreateResult" "Object" "_refObjectName"])]
+      (is (str/starts-with? story-name "another")))))
+
 
 (deftest bad-creds-test
   (is (thrown? Exception (subscription-info))))
@@ -49,7 +53,7 @@
   (let [config (clojure.edn/read-string (slurp "resources/bad-url.edn"))]
     (intern 'clj-rally.core 'rally (connection config)))
   (page-not-found-test)
- )
+  )
 
 
 
