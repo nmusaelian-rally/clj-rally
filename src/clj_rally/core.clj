@@ -15,7 +15,7 @@
   (get-in config [:rally]))
 
 (defn make-request
-  [method headers endpoint & {:keys [payload query-params]}]
+  [method headers endpoint & {:keys [payload query]}]
   (log/info (format "making request: %s" endpoint))
   (slingshot/try+
     (defn debug? []
@@ -24,10 +24,9 @@
     (:body (client/request {
                             :headers headers
                             :method method
-                            :url (str (get-in rally [:base-url]) endpoint)
+                            :url (str (get-in rally [:base-url]) endpoint query)
                             :content-type "application/json"
                             :body payload
-                            :query-params query-params
                             :debug (debug?)
                             :debug-body (debug?)}))
 
@@ -48,19 +47,19 @@
 
 (defn context []
   (let [headers (get-in rally [:auth])
-        workspaces-resource (get-in (subscription-info) [:workspaces-url])
-        workspace-query-params {"Name" (get-in rally [:workspace])}
-        workspace-fetch (format "?fetch=ObjectID,Projects")
-        workspace-endpoint (str workspaces-resource workspace-fetch)
-        wrk-result (make-request :get headers workspace-endpoint :query-params workspace-query-params )
-        workspace-oid (get-in (json/read-str wrk-result) ["QueryResult" "Results" 0 "ObjectID"])
-        projects-url  (get-in (json/read-str wrk-result) ["QueryResult" "Results" 0 "Projects" "_ref"])
-        projects-resource (second (str/split projects-url #"v2.0"))
-        project-query-params {"Name" (get-in rally [:project])}
-        project-fetch (format "?fetch=ObjectID")
-        project-endpoint (str projects-resource project-fetch)
-        proj-result (make-request :get headers project-endpoint :query-params project-query-params)
-        project-oid (get-in (json/read-str proj-result) ["QueryResult" "Results" 0 "ObjectID"])]
-    {:workspace workspace-oid :project project-oid})
+        wrk-resource (get-in (subscription-info) [:workspaces-url])
+        wrk-query    (format "&query=(Name = \"%s\")" (get-in rally [:workspace]))
+        wrk-fetch    (format "?fetch=ObjectID,Projects")
+        wrk-endpoint (str wrk-resource wrk-fetch)
+        wrk-result   (make-request :get headers wrk-endpoint :query wrk-query )
+        wrk-oid      (get-in (json/read-str wrk-result) ["QueryResult" "Results" 0 "ObjectID"])
+        projects-url (get-in (json/read-str wrk-result) ["QueryResult" "Results" 0 "Projects" "_ref"])
+        prj-resource (second (str/split projects-url #"v2.0"))
+        prj-query    (format "&query=(Name = \"%s\")" (get-in rally [:project]))
+        prj-fetch    (format "?fetch=ObjectID")
+        prj-endpoint (str prj-resource prj-fetch)
+        prj-result   (make-request :get headers prj-endpoint :query prj-query)
+        prj-oid      (get-in (json/read-str prj-result) ["QueryResult" "Results" 0 "ObjectID"])]
+    {:workspace wrk-oid :project prj-oid})
   )
 
