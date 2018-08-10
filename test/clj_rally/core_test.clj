@@ -26,42 +26,8 @@
     (is (= (get-in result [:workspace]) 1572380957))
     (is (= (get-in result [:project]) 1572381037))))
 
-;(deftest create-n-delete-test
-;  (let [artifact-type "HierarchicalRequirement"
-;        payload (format "{\"%s\": {\"Name\":\"another clojure toolkit story %s\"}}" artifact-type (str (t/time-now)))
-;        context-oids (context)
-;        story-resource "/%s/create?workspace=/workspace/%s&project=/project/%s"
-;        create-endpoint (format story-resource artifact-type (get context-oids :workspace) (get context-oids :project))]
-;    (let [result (make-request :post (get-in rally [:auth]) create-endpoint :payload payload)
-;          story-name (get-in (json/read-str result) ["CreateResult" "Object" "_refObjectName"])
-;          story-ref (get-in (json/read-str result) ["CreateResult" "Object" "_ref"])]
-;      (is (str/starts-with? story-name "another"))
-;      (let [story-endpoint (second (str/split story-ref #"v2.0"))
-;            delete-result (make-request :delete (get-in rally [:auth]) story-endpoint)
-;            errors (get-in (json/read-str delete-result) ["OperationResult" "Errors"])]
-;        (is (empty? errors))))))
 
-;(deftest find-n-update-test
-;  (let [artifact-type "HierarchicalRequirement"
-;        query  "&query=(Name = \"DON'T DELETE\")"
-;        fetch  "&fetch=ObjectID,ScheduleState"
-;        context-oids (context)
-;        story-resource "/%s?workspace=/workspace/%s&project=/project/%s"
-;        find-endpoint (format (str story-resource fetch) artifact-type (get context-oids :workspace) (get context-oids :project))]
-;    (let [result (make-request :get (get-in rally [:auth]) find-endpoint :query query)
-;          story-name  (get-in (json/read-str result) ["QueryResult" "Results" 0 "_refObjectName"])
-;          story-ref   (get-in (json/read-str result) ["QueryResult" "Results" 0 "_ref"])
-;          story-state (get-in (json/read-str result) ["QueryResult" "Results" 0 "ScheduleState"])]
-;      (is (str/starts-with? story-name "DON'T DELETE"))
-;      (log/info story-ref)
-;    (let [target-state (if (= story-state "Defined") "In-Progress" "Defined")
-;          update-payload  (format "{\"%s\":{\"ScheduleState\":\"%s\"}}" artifact-type target-state)
-;          update-endpoint (second (str/split story-ref #"v2.0"))]
-;      (let [update-result (make-request :post (get-in rally [:auth]) update-endpoint :payload update-payload)
-;            updated-story-state (get-in (json/read-str update-result) ["OperationResult" "Object" "ScheduleState"])]
-;        (is (= updated-story-state target-state)))))))
-
-(deftest create-test
+(deftest create-story
   (let [wi-type    "HierarchicalRequirement"
         name       (random-name)
         est        (float(+ (rand-int 10) 1))
@@ -72,7 +38,7 @@
     (is (= story-name name))
     (is (= story-est est))))
 
-(deftest read-test
+(deftest read-story
   (let [wi-type    "HierarchicalRequirement"
         query      "(Name = \"DON'T DELETE\")"
         fetch      "ObjectID,ScheduleState"
@@ -80,7 +46,7 @@
         name       (get-in (json/read-str result) ["QueryResult" "Results" 0 "_refObjectName"])]
     (is (= name "DON'T DELETE"))))
 
-(deftest update-test
+(deftest update-story
   (let [wi-type      "HierarchicalRequirement"
         query        "(Name = \"DON'T DELETE\")"
         fetch        "ObjectID,ScheduleState"
@@ -93,7 +59,7 @@
         new-state    (get-in (json/read-str new-result) ["OperationResult" "Object" "ScheduleState"])]
     (is (= new-state target-state))))
 
-(deftest delete-test
+(deftest delete-story
   (let [wi-type    "HierarchicalRequirement"
         name       (random-name)
         est        (float(+ (rand-int 10) 1))
@@ -103,6 +69,25 @@
         deleted    (delete-workitem wi-type oid)
         errors     (get-in (json/read-str deleted) ["OperationResult" "Errors"])]
     (is (empty? errors))))
+
+(deftest create-pi
+  (let [pi-type    "PortfolioItem/Feature"
+        name       (str "DON'T DELETE!"(random-name))
+        data       {:Name name}
+        result     (create-workitem pi-type data)
+        pi-name    (get-in (json/read-str result) ["CreateResult" "Object" "Name"])
+        pi-ref     (get-in (json/read-str result) ["CreateResult" "Object" "_ref"])
+        short-ref  (second (str/split pi-ref #"v2.0"))
+        wi-type     "HierarchicalRequirement"
+        query       "(Name = \"DON'T DELETE\")"
+        fetch       "ObjectID,Feature"
+        result      (read-workitem wi-type query fetch)
+        oid         (get-in (json/read-str result) ["QueryResult" "Results" 0 "ObjectID"])
+        data         {:PortfolioItem short-ref}
+        new-result   (update-workitem wi-type data oid)
+        new-parent   (get-in (json/read-str new-result) ["OperationResult" "Object" "Feature" "_refObjectName"])]
+    (is (= pi-name name))
+    (is (= new-parent pi-name))))
 
 (deftest bad-creds-test
   (is (thrown? Exception (subscription-info))))
@@ -116,12 +101,11 @@
 
   (subscription-info-test)
   (context-test)
-  ;(create-n-delete-test)
-  ;(find-n-update-test)
-  (create-test)
-  (read-test)
-  (update-test)
-  (delete-test)
+  (create-story)
+  (read-story)
+  (update-story)
+  (delete-story)
+  (create-pi)
 
   (let [config (clojure.edn/read-string (slurp "resources/bad-creds.edn"))]
     (intern 'clj-rally.core 'rally (connection config)))
