@@ -11,10 +11,12 @@
 (declare rally)
 
 (defn connection
+  "Takes a config file and supplies bindings to forward-declared rally object."
   [config]
   (get-in config [:rally]))
 
 (defn make-request
+  "Function for making CRUD http requests"
   [method headers endpoint & {:keys [payload query]}]
   (log/info (format "making request: %s" endpoint))
   (slingshot/try+
@@ -40,6 +42,7 @@
     ))
 
 (defn subscription-info []
+  "Makes a GET request to return a hashmap of sub-id, sub-uuid and workspaces-url"
   (let [ sub-endpoint "subscription?fetch=subscriptionID,workspaces"
         result (make-request :get (get-in rally [:auth]) sub-endpoint)
         sub-info {:sub-id         (get-in (json/read-str result) ["Subscription" "SubscriptionID"])
@@ -48,6 +51,7 @@
     sub-info))
 
 (defn context []
+  "Makes a GET request to return a hashmap of OIDs for workspace and project specified in config."
   (let [headers (get-in rally [:auth])
         wrk-resource (get-in (subscription-info) [:workspaces-url])
         wrk-query    (format "&query=(Name = \"%s\")" (get-in rally [:workspace]))

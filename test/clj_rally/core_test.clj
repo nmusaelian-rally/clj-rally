@@ -18,15 +18,20 @@
     (is (= (get-in result [:workspace]) 1572380957))
     (is (= (get-in result [:project]) 1572381037))))
 
-(deftest create-story-test
+(deftest create-n-delete-test
   (let [artifact-type "HierarchicalRequirement"
         payload (format "{\"%s\": {\"Name\":\"another clojure toolkit story %s\"}}" artifact-type (str (t/time-now)))
         context-oids (context)
         story-resource "/%s/create?workspace=/workspace/%s&project=/project/%s"
         create-endpoint (format story-resource artifact-type (get context-oids :workspace) (get context-oids :project))]
     (let [result (make-request :post (get-in rally [:auth]) create-endpoint :payload payload)
-          story-name (get-in (json/read-str result) ["CreateResult" "Object" "_refObjectName"])]
-      (is (str/starts-with? story-name "another")))))
+          story-name (get-in (json/read-str result) ["CreateResult" "Object" "_refObjectName"])
+          story-ref (get-in (json/read-str result) ["CreateResult" "Object" "_ref"])]
+      (is (str/starts-with? story-name "another"))
+      (let [story-endpoint (second (str/split story-ref #"v2.0"))
+            delete-result (make-request :delete (get-in rally [:auth]) story-endpoint)
+            errors (get-in (json/read-str delete-result) ["OperationResult" "Errors"])]
+        (is (empty? errors))))))
 
 (deftest find-n-update-test
   (let [artifact-type "HierarchicalRequirement"
@@ -47,16 +52,14 @@
           update-endpoint (second (str/split story-ref #"v2.0"))]
       (let [update-result (make-request :post (get-in rally [:auth]) update-endpoint :payload update-payload)
             updated-story-state (get-in (json/read-str update-result) ["OperationResult" "Object" "ScheduleState"])]
-        (is (= updated-story-state target-state))))))
-  )
+        (is (= updated-story-state target-state)))))))
+
 
 (deftest bad-creds-test
   (is (thrown? Exception (subscription-info))))
 
-
 (deftest page-not-found-test
   (is (thrown? Exception (subscription-info))))
-
 
 (defn -main [& args]
   (let [config (clojure.edn/read-string (slurp "resources/config.edn"))]
@@ -64,17 +67,16 @@
 
   (subscription-info-test)
   (context-test)
-  ;(create-story-test)
+  (create-n-delete-test)
   (find-n-update-test)
 
-  ;(let [config (clojure.edn/read-string (slurp "resources/bad-creds.edn"))]
-  ;  (intern 'clj-rally.core 'rally (connection config)))
-  ;(bad-creds-test)
-  ;
-  ;(let [config (clojure.edn/read-string (slurp "resources/bad-url.edn"))]
-  ;  (intern 'clj-rally.core 'rally (connection config)))
-  ;(page-not-found-test)
-  )
+  (let [config (clojure.edn/read-string (slurp "resources/bad-creds.edn"))]
+    (intern 'clj-rally.core 'rally (connection config)))
+  (bad-creds-test)
+
+  (let [config (clojure.edn/read-string (slurp "resources/bad-url.edn"))]
+    (intern 'clj-rally.core 'rally (connection config)))
+  (page-not-found-test))
 
 
 
