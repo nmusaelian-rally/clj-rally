@@ -36,8 +36,19 @@
         story-resource "/%s?workspace=/workspace/%s&project=/project/%s"
         find-endpoint (format (str story-resource fetch) artifact-type (get context-oids :workspace) (get context-oids :project))]
     (let [result (make-request :get (get-in rally [:auth]) find-endpoint :query query)
-          story-name (get-in (json/read-str result) ["QueryResult" "Results" 0 "_refObjectName"])]
-      (is (str/starts-with? story-name "DON'T DELETE")))))
+          story-name  (get-in (json/read-str result) ["QueryResult" "Results" 0 "_refObjectName"])
+          story-ref   (get-in (json/read-str result) ["QueryResult" "Results" 0 "_ref"])
+          story-state (get-in (json/read-str result) ["QueryResult" "Results" 0 "ScheduleState"])]
+      (is (str/starts-with? story-name "DON'T DELETE"))
+      (log/info story-ref)
+
+    (let [target-state (if (= story-state "Defined") "In-Progress" "Defined")
+          update-payload  (format "{\"%s\":{\"ScheduleState\":\"%s\"}}" artifact-type target-state)
+          update-endpoint (second (str/split story-ref #"v2.0"))]
+      (let [update-result (make-request :post (get-in rally [:auth]) update-endpoint :payload update-payload)
+            updated-story-state (get-in (json/read-str update-result) ["OperationResult" "Object" "ScheduleState"])]
+        (is (= updated-story-state target-state))))))
+  )
 
 (deftest bad-creds-test
   (is (thrown? Exception (subscription-info))))
@@ -56,13 +67,13 @@
   ;(create-story-test)
   (find-n-update-test)
 
-  (let [config (clojure.edn/read-string (slurp "resources/bad-creds.edn"))]
-    (intern 'clj-rally.core 'rally (connection config)))
-  (bad-creds-test)
-
-  (let [config (clojure.edn/read-string (slurp "resources/bad-url.edn"))]
-    (intern 'clj-rally.core 'rally (connection config)))
-  (page-not-found-test)
+  ;(let [config (clojure.edn/read-string (slurp "resources/bad-creds.edn"))]
+  ;  (intern 'clj-rally.core 'rally (connection config)))
+  ;(bad-creds-test)
+  ;
+  ;(let [config (clojure.edn/read-string (slurp "resources/bad-url.edn"))]
+  ;  (intern 'clj-rally.core 'rally (connection config)))
+  ;(page-not-found-test)
   )
 
 

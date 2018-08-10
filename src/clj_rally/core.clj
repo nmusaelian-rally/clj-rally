@@ -35,6 +35,8 @@
     (catch [:status 404] {:keys [body]}
       (log/error (str "Oh noes! Page not found 404! Body:\n" body)))
     (catch Exception e (log/error (str "Oh noes! Exception:\n ") (.toString e)))
+    (catch [:status 405] {:keys [body]}
+      (log/error (str "Oh noes! Method not allowed 401! Body:\n" body)))
     ))
 
 (defn subscription-info []
